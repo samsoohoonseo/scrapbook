@@ -13,8 +13,9 @@ import {
     useIntersect,
     Image as ImageImpl,
     useScroll,
+    useVideoTexture,
 } from '@react-three/drei'
-import { useRef, useState } from 'react'
+import { Suspense, useRef, useState } from 'react'
 
 // interface ItemProps extends GroupProps {
 //     url: string
@@ -25,7 +26,6 @@ import { useRef, useState } from 'react'
 
 interface MyImageProps {
     url: string
-    // url: string
     scale: number | [number, number] | undefined
     position: Vector3
     c?: THREE.Color
@@ -77,6 +77,83 @@ const MyImage = ({
     )
 }
 
+interface MyGifImageProps {
+    url: string
+    scale: Vector3
+    position: Vector3
+    c?: THREE.Color
+}
+
+const GifImage = ({
+    url,
+    scale,
+    position,
+    c = new THREE.Color(),
+}: MyGifImageProps) => {
+    const visible = useRef(false)
+    // const ref = useRef<THREE.Mesh>(null!)
+    const ref = useIntersect((isVisible) => (visible.current = isVisible))
+    const [hovered, setHovered] = useState(false)
+    const { height } = useThree((state) => state.viewport)
+    useFrame((_, delta) => {
+        ref.current.material.color.lerp(
+            c.set(hovered ? 'white' : '#ccc'),
+            hovered ? 0.4 : 0.05,
+        )
+        // test start
+        ref.current.position.y = THREE.MathUtils.damp(
+            ref.current.position.y,
+            visible.current ? 0 : -height / 2,
+            4,
+            delta,
+        )
+        ref.current.material.zoom = THREE.MathUtils.damp(
+            ref.current.material.zoom,
+            visible.current ? 1 : 1.5,
+            4,
+            delta,
+        )
+        // test end
+    })
+
+    // const [video] = useState(() => {
+    //     const vid = document.createElement('video')
+    //     // vid.src = url
+    //     vid.src = '/luna/luna-web-login-to-table.mp4'
+    //     vid.crossOrigin = 'Anonymous'
+    //     vid.loop = true
+    //     vid.muted = true
+    //     vid.play()
+    //     vid.autoplay = true
+    //     return vid
+    // })
+    // const texture = useVideoTexture('/luna/luna-web-login-to-table.mp4')
+    const texture = useVideoTexture(url)
+    return (
+        <group position={position}>
+            {/* <ImageImpl
+                ref={ref}
+                onPointerOver={() => setHovered(true)}
+                onPointerOut={() => setHovered(false)}
+                // {...props}
+                url={url}
+                scale={scale}
+                // position={position}
+            /> */}
+            <mesh rotation={[0, 0, 0]} ref={ref}>
+                {/* <planeGeometry args={[3.2, 1.9]} /> */}
+                {/* <planeGeometry args={[6, 3.5]} /> */}
+                <planeGeometry args={[10, 5.5]} />
+                <meshBasicMaterial map={texture} />
+                {/* <meshStandardMaterial>
+                    <videoTexture attach="map" args={[video]} />
+                    <videoTexture attach="emissiveMap" args={[video]} />
+                </meshStandardMaterial> */}
+            </mesh>
+        </group>
+    )
+}
+
 const Images = () => {
     const { width, height } = useThree((state) => state.viewport)
     // const data = useScroll()
@@ -106,27 +183,34 @@ const Images = () => {
             <MyImage
                 position={[-4, 0, 0]}
                 scale={[6, height]}
-                url="/Luna_Web_RecoverClinic.png"
+                url="/luna/Luna_Web_RecoverClinic.png"
             />
             <MyImage
                 position={[2, 0, 1]}
                 scale={3}
-                url="/Luna_Web_RecoverClinic.png"
+                url="/luna/Luna_Web_RecoverClinic.png"
             />
             <MyImage
                 position={[2, 3.5, 1]}
                 scale={3}
-                url="/Luna_Web_RecoverClinic.png"
+                url="/luna/Luna_Web_RecoverClinic.png"
             />
             <MyImage
-                position={[-2.3, -height, 2]}
+                position={[-6, -height, 2]}
                 scale={[1, 3]}
-                url="/Luna_Web_RecoverClinic.png"
+                url="/luna/Luna_Web_RecoverClinic.png"
             />
+            <Suspense fallback={null}>
+                <GifImage
+                    position={[3, -height, 2]}
+                    scale={[1.5, 1.3, 0]}
+                    url="/luna/luna-web-login-to-table.mp4"
+                />
+            </Suspense>
             <MyImage
                 position={[-width / 6, -height * 4.1, 0]}
                 scale={[width / 2.5, width / 2]}
-                url="/Luna_Web_RecoverClinic.png"
+                url="/luna/Luna_Web_RecoverClinic.png"
             />
         </Scroll>
     )
@@ -198,6 +282,13 @@ export default function FunScrollPage() {
 
     return (
         <div className="h-screen">
+            {/* code below works */}
+            {/* <video autoPlay={true} loop={true} muted={true}> 
+                <source
+                    src="/luna/luna-web-login-to-table.mp4"
+                    type="video/mp4"
+                />
+            </video> */}
             <Canvas
                 orthographic
                 camera={{ zoom: 80 }}
@@ -210,7 +301,7 @@ export default function FunScrollPage() {
                 dpr={[1, 1.5]}
             >
                 {/* <Items /> */}
-                <color attach="background" args={['gray']} />
+                <color attach="background" args={['rgb(105,105,105)']} />
                 {/* <ambientLight intensity={Math.PI / 2} /> */}
                 {/* Suggesteed damping from the sample code is 6 */}
                 <ScrollControls damping={1} pages={5}>
@@ -235,9 +326,10 @@ export default function FunScrollPage() {
                                 position: 'absolute',
                                 top: '180vh',
                                 left: '10vw',
+                                fontSize: '2rem',
                             }}
                         >
-                            World
+                            To a responsive website
                         </h1>
                         <h1
                             style={{
@@ -267,6 +359,11 @@ export default function FunScrollPage() {
                             {' '}
                             Sam{' '}
                         </h1>
+                        {/* <img
+                            height={10}
+                            src="/luna/luna-web-login-to-table.gif"
+                            alt="test"
+                        /> */}
                     </Scroll>
                 </ScrollControls>
             </Canvas>
